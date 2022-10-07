@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using QuizService.Model;
 using QuizService.Model.Domain;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -30,7 +31,14 @@ namespace QuizService.Service
 					}).ToList();
 		}
 
-		public object Get(int id)
+		public Quiz Get(int id)
+		{
+			const string sql = "SELECT * FROM Quiz WHERE Id = @QuizId;";
+			var quiz = _connection.Query<Quiz>(sql, new { QuizId = id });
+			return quiz.FirstOrDefault();
+		}
+
+		public object MakeQuizObject(int id)
 		{
 			const string quizSql = "SELECT * FROM Quiz WHERE Id = @Id;";
 			var quiz = _connection.QuerySingle<Quiz>(quizSql, new { Id = id });
@@ -75,8 +83,8 @@ namespace QuizService.Service
 		public int Add(QuizCreateModel model)
 		{
 			var sql = $"INSERT INTO Quiz (Title) VALUES('{model.Title}'); SELECT LAST_INSERT_ROWID();";
-			int? id = (int?)_connection.ExecuteScalar(sql);
-			return id.Value;
+			var id = _connection.ExecuteScalar(sql);
+			return Convert.ToInt32(id);
 		}
 
 		public int Update(int id, [FromBody] QuizUpdateModel model)
@@ -99,7 +107,7 @@ namespace QuizService.Service
 		public List<Question> GetQuestionList(int? id)
 		{
 			const string sql = "SELECT * FROM Question WHERE @QuizId IS NULL OR QuizId = @QuizId;";
-			var questions = _connection.Query<Question>(sql, new { QuizId = id});
+			var questions = _connection.Query<Question>(sql, new { QuizId = id });
 			return questions.ToList();
 		}
 
@@ -113,15 +121,15 @@ namespace QuizService.Service
 		public int AddQuestion(int id, QuestionCreateModel model)
 		{
 			const string sql = "INSERT INTO Question (Text, QuizId) VALUES(@Text, @QuizId); SELECT LAST_INSERT_ROWID();";
-			int? questionId = (int?)_connection.ExecuteScalar(sql, new { Text = model.Text, QuizId = id });
-			return questionId.Value;
+			var questionId = _connection.ExecuteScalar(sql, new { Text = model.Text, QuizId = id });
+			return Convert.ToInt32(questionId);
 		}
 
 		public int UpdateQuestion(int qid, QuestionUpdateModel model)
 		{
 			const string sql = "UPDATE Question SET Text = @Text, CorrectAnswerId = @CorrectAnswerId WHERE Id = @QuestionId";
 			int rowsUpdated = _connection.Execute(sql, new { QuestionId = qid, Text = model.Text, CorrectAnswerId = model.CorrectAnswerId });
-			
+
 			return rowsUpdated;
 		}
 
@@ -151,15 +159,15 @@ namespace QuizService.Service
 		public int AddAnswer(int qid, AnswerCreateModel model)
 		{
 			const string sql = "INSERT INTO Answer (Text, QuestionId) VALUES(@Text, @QuestionId); SELECT LAST_INSERT_ROWID();";
-			int? answerId = (int?)_connection.ExecuteScalar(sql, new { Text = model.Text, QuestionId = qid });
-			return answerId.Value;
+			var answerId = _connection.ExecuteScalar(sql, new { Text = model.Text, QuestionId = qid });
+			return Convert.ToInt32(answerId);
 		}
 
 		public int UpdateAnswer(int qid, AnswerUpdateModel model)
 		{
 			const string sql = "UPDATE Answer SET Text = @Text WHERE Id = @AnswerId";
 			int rowsUpdated = _connection.Execute(sql, new { AnswerId = qid, Text = model.Text });
-			
+
 			return rowsUpdated;
 		}
 

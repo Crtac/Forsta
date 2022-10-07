@@ -12,12 +12,10 @@ namespace QuizService.Controllers;
 [Route("api/quizzes")]
 public class QuizController : Controller
 {
-	private readonly IDbConnection _connection;
 	private readonly Service.QuizService _service;
 
 	public QuizController(IDbConnection connection)
 	{
-		_connection = connection;
 		_service = new Service.QuizService(connection);
 	}
 
@@ -33,7 +31,11 @@ public class QuizController : Controller
 	[HttpGet("{id}")]
 	public object Get(int id)
 	{
-		return _service.Get(id);
+		Quiz quiz = _service.Get(id);
+		if (quiz == null)
+			return NotFound();
+
+		return _service.MakeQuizObject(id);
 	}
 
 	// POST api/quizzes
@@ -71,6 +73,10 @@ public class QuizController : Controller
 	[Route("{id}/questions")]
 	public IActionResult PostQuestion(int id, [FromBody] QuestionCreateModel value)
 	{
+		Quiz quiz = _service.Get(id);
+		if (quiz == null)
+			return NotFound();
+
 		var questionId = _service.AddQuestion(id, value);
 		return Created($"/api/quizzes/{id}/questions/{questionId}", null);
 	}
@@ -78,7 +84,12 @@ public class QuizController : Controller
 	// PUT api/quizzes/5/questions/6
 	[HttpPut("{id}/questions/{qid}")]
 	public IActionResult PutQuestion(int id, int qid, [FromBody] QuestionUpdateModel value)
-	{
+	{ 
+		//Question ne provjeravamo da li postoji mada bih i njega rado provjerio da li postoji prije upita za update
+		Answer answer = _service.GetAnswer(value.CorrectAnswerId);
+		if (answer == null)
+			NotFound();
+
 		int rowsUpdated = _service.UpdateQuestion(qid, value);
 		if (rowsUpdated == 0)
 			return NotFound();
@@ -90,6 +101,7 @@ public class QuizController : Controller
 	[Route("{id}/questions/{qid}")]
 	public IActionResult DeleteQuestion(int id, int qid)
 	{
+		//Question ne provjeravamo da li postoji mada bih i njega rado provjerio da li postoji prije upita za update
 		int rowsDeleted = _service.DeleteQuestion(qid);
 		if (rowsDeleted == 0)
 			return NotFound();
@@ -103,6 +115,10 @@ public class QuizController : Controller
 	[Route("{id}/questions/{qid}/answers")]
 	public IActionResult PostAnswer(int id, int qid, [FromBody] AnswerCreateModel value)
 	{
+		Question question = _service.GetQuestion(qid);
+		if (question == null)
+			return NotFound();
+
 		var answerId = _service.AddAnswer(qid, value);
 		return Created($"/api/quizzes/{id}/questions/{qid}/answers/{answerId}", null);
 	}
@@ -111,6 +127,7 @@ public class QuizController : Controller
 	[HttpPut("{id}/questions/{qid}/answers/{aid}")]
 	public IActionResult PutAnswer(int id, int qid, int aid, [FromBody] AnswerUpdateModel value)
 	{
+		//Answer nećemo provjeravati da li postoji budući da se neće izvršiti upit ako ga ne nađe u bazi
 		int rowsUpdated = _service.UpdateAnswer(qid, value);
 		if (rowsUpdated == 0)
 			return NotFound();
@@ -122,6 +139,7 @@ public class QuizController : Controller
 	[Route("{id}/questions/{qid}/answers/{aid}")]
 	public IActionResult DeleteAnswer(int id, int qid, int aid)
 	{
+		//Answer nećemo provjeravati da li postoji budući da se neće izvršiti upit ako ga ne nađe u bazi
 		int rowsDeleted = _service.DeleteAnswer(aid);
 		if (rowsDeleted == 0)
 			return NotFound();
