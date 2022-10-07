@@ -38,24 +38,9 @@ namespace QuizService.Service
 			return quiz.FirstOrDefault();
 		}
 
-		public object MakeQuizObject(int id)
+		public object MakeQuizObject(Quiz quiz, List<Question> questions, Dictionary<int, IList<Answer>> answers)
 		{
-			const string quizSql = "SELECT * FROM Quiz WHERE Id = @Id;";
-			var quiz = _connection.QuerySingle<Quiz>(quizSql, new { Id = id });
-			if (quiz == null)
-				return null;
-			const string questionsSql = "SELECT * FROM Question WHERE QuizId = @QuizId;";
-			var questions = _connection.Query<Question>(questionsSql, new { QuizId = id });
-			const string answersSql = "SELECT a.Id, a.Text, a.QuestionId FROM Answer a INNER JOIN Question q ON a.QuestionId = q.Id WHERE q.QuizId = @QuizId;";
-			var answers = _connection.Query<Answer>(answersSql, new { QuizId = id })
-					.Aggregate(new Dictionary<int, IList<Answer>>(), (dict, answer) =>
-					{
-						if (!dict.ContainsKey(answer.QuestionId))
-							dict.Add(answer.QuestionId, new List<Answer>());
-						dict[answer.QuestionId].Add(answer);
-						return dict;
-					});
-			return new QuizResponseModel
+			var model = new QuizResponseModel
 			{
 				Id = quiz.Id,
 				Title = quiz.Title,
@@ -74,10 +59,12 @@ namespace QuizService.Service
 				}),
 				Links = new Dictionary<string, string>
 						{
-								{"self", $"/api/quizzes/{id}"},
-								{"questions", $"/api/quizzes/{id}/questions"}
+								{"self", $"/api/quizzes/{quiz.Id}"},
+								{"questions", $"/api/quizzes/{quiz.Id}/questions"}
 						}
 			};
+
+			return model;
 		}
 
 		public int Add(QuizCreateModel model)
@@ -147,6 +134,21 @@ namespace QuizService.Service
 			const string sql = "SELECT * FROM Answer WHERE Id = @QuestionId;";
 			var answers = _connection.Query<Answer>(sql, new { QuestionId = qid });
 			return answers.ToList();
+		}
+
+		public Dictionary<int, IList<Answer>> GetAnswerListForQuiz(int id)
+		{
+			const string answersSql = "SELECT a.Id, a.Text, a.QuestionId FROM Answer a INNER JOIN Question q ON a.QuestionId = q.Id WHERE q.QuizId = @QuizId;";
+			var answers = _connection.Query<Answer>(answersSql, new { QuizId = id })
+					.Aggregate(new Dictionary<int, IList<Answer>>(), (dict, answer) =>
+					{
+						if (!dict.ContainsKey(answer.QuestionId))
+							dict.Add(answer.QuestionId, new List<Answer>());
+						dict[answer.QuestionId].Add(answer);
+						return dict;
+					});
+
+			return answers;
 		}
 
 		public Answer GetAnswer(int aid)

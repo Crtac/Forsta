@@ -35,7 +35,11 @@ public class QuizController : Controller
 		if (quiz == null)
 			return NotFound();
 
-		return _service.MakeQuizObject(id);
+		var listOfQuestions = _service.GetQuestionList(id);
+
+		var listOfAnswers = _service.GetAnswerListForQuiz(id);
+
+		return _service.MakeQuizObject(quiz, listOfQuestions, listOfAnswers);
 	}
 
 	// POST api/quizzes
