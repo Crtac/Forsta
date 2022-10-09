@@ -46,7 +46,7 @@ namespace QuizService.Service
 			{
 				Id = quiz.Id,
 				Title = quiz.Title,
-				Questions = questions.Select(question => new QuizResponseModel.QuestionItem
+				Questions = questions.Select(question => new QuizResponseModel.QuestionItem //TODO ne bih koristio dugi naziv, ostao bih kod q recimo za lamda expresion
 				{
 					Id = question.Id,
 					Text = question.Text,
@@ -77,7 +77,7 @@ namespace QuizService.Service
 			return Convert.ToInt32(id);
 		}
 
-		public int Update(int id, [FromBody] QuizUpdateModel model)
+		public int Update(int id, QuizUpdateModel model)
 		{
 			const string sql = "UPDATE Quiz SET Title = @Title WHERE Id = @Id";
 			int rowsUpdated = _connection.Execute(sql, new { Id = id, Title = model.Title });

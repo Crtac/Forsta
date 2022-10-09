@@ -2,5 +2,5 @@ namespace QuizService.Model;
 
 public class QuizUpdateModel
 {
-    public string Title { get; set; }
+	public string Title { get; set; }
 }
