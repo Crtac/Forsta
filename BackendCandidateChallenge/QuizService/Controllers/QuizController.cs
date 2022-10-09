@@ -1,11 +1,8 @@
-﻿using System.Collections.Generic;
-using System.Data;
-using Dapper;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using QuizService.Model;
 using QuizService.Model.Domain;
-using System.Linq;
-using QuizService.Service;
+using System.Collections.Generic;
+using System.Data;
 
 namespace QuizService.Controllers;
 
@@ -47,6 +44,7 @@ public class QuizController : Controller
 	public IActionResult Post([FromBody] QuizCreateModel value)
 	{
 		var id = _service.Add(value);
+
 		return Created($"/api/quizzes/{id}", null);
 	}
 
@@ -57,7 +55,21 @@ public class QuizController : Controller
 		int rowsUpdated = _service.Update(id, value);
 		if (rowsUpdated == 0)
 			return NotFound();
+
 		return NoContent();
+	}
+
+	// PUT api/quizzes/5/evaluate
+	[HttpPut("{id}/evaluate")]
+	public string Evaluate(int id, [FromBody] Dictionary<int, int> questionAnswerList)
+	{
+		var quiz = _service.Get(id);
+		if (quiz == null)
+			return null; //Znak frontendu da nije pronadjen test te nije ocjenjen
+
+		string grade = _service.Evaluate(id, questionAnswerList);
+
+		return grade;
 	}
 
 	// DELETE api/quizzes/5
@@ -67,6 +79,7 @@ public class QuizController : Controller
 		int rowsDeleted = _service.Delete(id);
 		if (rowsDeleted == 0)
 			return NotFound();
+
 		return NoContent();
 	}
 	#endregion
@@ -82,14 +95,15 @@ public class QuizController : Controller
 			return NotFound();
 
 		var questionId = _service.AddQuestion(id, value);
+
 		return Created($"/api/quizzes/{id}/questions/{questionId}", null);
 	}
 
 	// PUT api/quizzes/5/questions/6
 	[HttpPut("{id}/questions/{qid}")]
 	public IActionResult PutQuestion(int id, int qid, [FromBody] QuestionUpdateModel value)
-	{ 
-		//Question ne provjeravamo da li postoji mada bih i njega rado provjerio da li postoji prije upita za update
+	{
+		//Question nećemo provjeravati da li postoji budući da se neće izvršiti upit ako ga ne nađe u bazi
 		Answer answer = _service.GetAnswer(value.CorrectAnswerId);
 		if (answer == null)
 			NotFound();
@@ -97,6 +111,7 @@ public class QuizController : Controller
 		int rowsUpdated = _service.UpdateQuestion(qid, value);
 		if (rowsUpdated == 0)
 			return NotFound();
+
 		return NoContent();
 	}
 
@@ -105,10 +120,11 @@ public class QuizController : Controller
 	[Route("{id}/questions/{qid}")]
 	public IActionResult DeleteQuestion(int id, int qid)
 	{
-		//Question ne provjeravamo da li postoji mada bih i njega rado provjerio da li postoji prije upita za update
+		//Question nećemo provjeravati da li postoji budući da se neće izvršiti upit ako ga ne nađe u bazi
 		int rowsDeleted = _service.DeleteQuestion(qid);
 		if (rowsDeleted == 0)
 			return NotFound();
+
 		return NoContent();
 	}
 	#endregion
@@ -124,6 +140,7 @@ public class QuizController : Controller
 			return NotFound();
 
 		var answerId = _service.AddAnswer(qid, value);
+
 		return Created($"/api/quizzes/{id}/questions/{qid}/answers/{answerId}", null);
 	}
 
@@ -135,6 +152,7 @@ public class QuizController : Controller
 		int rowsUpdated = _service.UpdateAnswer(qid, value);
 		if (rowsUpdated == 0)
 			return NotFound();
+
 		return NoContent();
 	}
 
@@ -147,6 +165,7 @@ public class QuizController : Controller
 		int rowsDeleted = _service.DeleteAnswer(aid);
 		if (rowsDeleted == 0)
 			return NotFound();
+
 		return NoContent();
 	}
 	#endregion

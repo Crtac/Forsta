@@ -23,18 +23,20 @@ namespace QuizService.Service
 		{
 			const string sql = "SELECT * FROM Quiz;";
 			var quizzes = _connection.Query<Quiz>(sql);
+
 			return quizzes.Select(quiz =>
-					new QuizResponseModel
-					{
-						Id = quiz.Id,
-						Title = quiz.Title
-					}).ToList();
+										new QuizResponseModel
+										{
+											Id = quiz.Id,
+											Title = quiz.Title
+										}).ToList();
 		}
 
 		public Quiz Get(int id)
 		{
 			const string sql = "SELECT * FROM Quiz WHERE Id = @QuizId;";
 			var quiz = _connection.Query<Quiz>(sql, new { QuizId = id });
+
 			return quiz.FirstOrDefault();
 		}
 
@@ -71,6 +73,7 @@ namespace QuizService.Service
 		{
 			var sql = $"INSERT INTO Quiz (Title) VALUES('{model.Title}'); SELECT LAST_INSERT_ROWID();";
 			var id = _connection.ExecuteScalar(sql);
+
 			return Convert.ToInt32(id);
 		}
 
@@ -82,10 +85,27 @@ namespace QuizService.Service
 			return rowsUpdated;
 		}
 
+		public string Evaluate(int id, Dictionary<int, int> questionAnswerList)
+		{
+			//Necemo provjeravati da li postoje duplikati buduci da u dictionary ne moze da dodje key duplikat
+			var questions = GetQuestionList(id);
+
+			int maxPoints = questions.Count();
+
+			var points = questions.Join(questionAnswerList,
+								x => new { x.Id, Answer = x.CorrectAnswerId },
+								y => new { Id = y.Key, Answer = y.Value },
+								(x, y) => x.Id)
+								.Count();
+
+			return $"{points} / {maxPoints}";
+		}
+
 		public int Delete(int id)
 		{
 			const string sql = "DELETE FROM Quiz WHERE Id = @Id";
 			int rowsDeleted = _connection.Execute(sql, new { Id = id });
+
 			return rowsDeleted;
 		}
 		#endregion
@@ -95,6 +115,7 @@ namespace QuizService.Service
 		{
 			const string sql = "SELECT * FROM Question WHERE @QuizId IS NULL OR QuizId = @QuizId;";
 			var questions = _connection.Query<Question>(sql, new { QuizId = id });
+
 			return questions.ToList();
 		}
 
@@ -102,6 +123,7 @@ namespace QuizService.Service
 		{
 			const string sql = "SELECT * FROM Question WHERE Id = @QuestionId;";
 			var questions = _connection.Query<Question>(sql, new { QuestionId = qid });
+
 			return questions.FirstOrDefault();
 		}
 
@@ -109,6 +131,7 @@ namespace QuizService.Service
 		{
 			const string sql = "INSERT INTO Question (Text, QuizId) VALUES(@Text, @QuizId); SELECT LAST_INSERT_ROWID();";
 			var questionId = _connection.ExecuteScalar(sql, new { Text = model.Text, QuizId = id });
+
 			return Convert.ToInt32(questionId);
 		}
 
@@ -124,6 +147,7 @@ namespace QuizService.Service
 		{
 			const string sql = "DELETE FROM Question WHERE Id = @QuestionId";
 			int rowsDeleted = _connection.Execute(sql, new { QuestionId = qid });
+
 			return rowsDeleted;
 		}
 		#endregion
@@ -133,6 +157,7 @@ namespace QuizService.Service
 		{
 			const string sql = "SELECT * FROM Answer WHERE Id = @QuestionId;";
 			var answers = _connection.Query<Answer>(sql, new { QuestionId = qid });
+
 			return answers.ToList();
 		}
 
@@ -155,6 +180,7 @@ namespace QuizService.Service
 		{
 			const string sql = "SELECT * FROM Question WHERE Id = @AnswerId;";
 			var answer = _connection.Query<Answer>(sql, new { AnswerId = aid });
+
 			return answer.FirstOrDefault();
 		}
 
@@ -162,6 +188,7 @@ namespace QuizService.Service
 		{
 			const string sql = "INSERT INTO Answer (Text, QuestionId) VALUES(@Text, @QuestionId); SELECT LAST_INSERT_ROWID();";
 			var answerId = _connection.ExecuteScalar(sql, new { Text = model.Text, QuestionId = qid });
+
 			return Convert.ToInt32(answerId);
 		}
 
@@ -177,6 +204,7 @@ namespace QuizService.Service
 		{
 			const string sql = "DELETE FROM Answer WHERE Id = @AnswerId";
 			int rowsDeleted = _connection.Execute(sql, new { AnswerId = aid });
+
 			return rowsDeleted;
 		}
 		#endregion
